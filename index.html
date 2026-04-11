@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>InfoHunter Clock Widget</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+}
+
+body{
+  background:linear-gradient(160deg,#0d0015 0%,#1a0a2e 40%,#100520 100%);
+  border-radius:12px;
+  overflow:hidden;
+}
+
+/* ===== Layout ===== */
+.widget{
+  position:relative;width:100%;height:100%;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  overflow:hidden;
+  padding:16px;
+}
+
+/* ===== Aurora ambient glow ===== */
+.aurora{position:absolute;inset:0;pointer-events:none}
+.aurora::before{
+  content:'';position:absolute;
+  width:70%;height:65%;top:5%;left:15%;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(184,97,255,0.13) 0%,transparent 70%);
+  animation:aurora1 8s ease-in-out infinite;
+}
+.aurora::after{
+  content:'';position:absolute;
+  width:55%;height:55%;bottom:8%;right:5%;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(255,142,212,0.08) 0%,transparent 70%);
+  animation:aurora2 12s ease-in-out infinite;
+}
+@keyframes aurora1{
+  0%,100%{opacity:.5;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.15)}
+}
+@keyframes aurora2{
+  0%,100%{opacity:.3;transform:scale(1)}
+  50%{opacity:.7;transform:scale(1.1) translate(-3%,2%)}
+}
+
+/* ===== Particles ===== */
+.particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;will-change:transform,opacity}
+.particle svg{width:100%;height:100%;display:block}
+
+/* ===== Logo ===== */
+.logo{
+  position:relative;z-index:2;
+  margin-bottom:0;
+  display:flex;align-items:center;justify-content:center;
+  gap:10px;
+  transform:translateX(-14px);
+}
+.logo-icon{
+  width:clamp(42px,10vw,60px);height:clamp(42px,10vw,60px);flex-shrink:0;
+  filter:drop-shadow(0 0 12px rgba(184,97,255,0.6)) drop-shadow(0 0 30px rgba(184,97,255,0.3));
+  animation:logoBreathe 4s ease-in-out infinite;
+}
+.logo-text{
+  font-size:clamp(16px,4vw,22px);font-weight:300;letter-spacing:5px;
+  color:rgba(212,160,255,0.9);
+  text-shadow:0 0 20px rgba(184,97,255,0.5),0 0 40px rgba(184,97,255,0.2);
+}
+.logo-right{
+  display:flex;flex-direction:column;align-items:center;
+}
+.logo-sub{
+  font-size:clamp(8px,1.8vw,11px);letter-spacing:5px;
+  color:rgba(212,160,255,0.4);
+  text-shadow:0 0 15px rgba(184,97,255,0.2);
+  margin-top:2px;
+}
+
+/* ===== Shimmer divider ===== */
+.shimmer{
+  position:relative;z-index:2;
+  width:45%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(184,97,255,0.3),transparent);
+}
+.shimmer-top{margin:2px 0 18px}
+.shimmer-bottom{margin:18px 0 2px}
+
+/* ===== Time ===== */
+.time-section{position:relative;z-index:2;text-align:center}
+.time-hm{
+  font-size:clamp(36px,8.5vw,54px);
+  font-weight:200;color:#fff;letter-spacing:4px;line-height:1;
+  text-shadow:
+    0 0 25px rgba(184,97,255,0.5),
+    0 0 50px rgba(184,97,255,0.25),
+    0 0 80px rgba(184,97,255,0.1);
+}
+.time-sec{
+  font-size:clamp(13px,2.8vw,18px);
+  font-weight:200;color:rgba(255,255,255,0.28);
+  vertical-align:super;margin-left:3px;
+}
+
+/* ===== Date ===== */
+.date-section{
+  position:relative;z-index:2;
+  text-align:center;margin-top:10px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  flex-wrap:wrap;
+}
+.date-val{
+  font-size:clamp(10px,2.2vw,13px);
+  font-weight:300;color:rgba(212,160,255,0.6);letter-spacing:1.5px;
+}
+.date-week{
+  font-size:clamp(9px,1.8vw,11px);
+  padding:3px 12px;
+  background:rgba(184,97,255,0.15);
+  border:1px solid rgba(184,97,255,0.2);
+  border-radius:12px;
+  color:rgba(212,160,255,0.7);font-weight:300;
+  box-shadow:0 0 12px rgba(184,97,255,0.1);
+}
+
+/* ===== Daily Quote ===== */
+.quote-section{
+  position:relative;z-index:2;
+  margin-top:8px;
+  max-width:85%;
+  text-align:center;
+}
+.quote-text{
+  font-size:clamp(11px,2.4vw,14px);
+  font-weight:400;
+  color:rgba(230,210,255,0.75);
+  letter-spacing:1px;
+  line-height:1.7;
+  font-style:italic;
+  text-shadow:0 0 12px rgba(184,97,255,0.25);
+}
+.quote-author{
+  font-size:clamp(9px,1.8vw,12px);
+  color:rgba(212,160,255,0.6);
+  margin-top:6px;
+  font-style:normal;
+  letter-spacing:1.5px;
+}
+
+/* ===== Logo breathe ===== */
+@keyframes logoBreathe{
+  0%,100%{transform:scale(1);filter:drop-shadow(0 0 12px rgba(184,97,255,0.6)) drop-shadow(0 0 30px rgba(184,97,255,0.3))}
+  50%{transform:scale(1.06);filter:drop-shadow(0 0 18px rgba(184,97,255,0.8)) drop-shadow(0 0 40px rgba(184,97,255,0.4))}
+}
+
+/* ===== Particle animations ===== */
+@keyframes starFloat{
+  0%{transform:translate(0,110vh) rotate(0deg) scale(0);opacity:0}
+  6%{opacity:.9;transform:translate(10px,92vh) rotate(25deg) scale(1)}
+  25%{transform:translate(-15px,70vh) rotate(100deg) scale(.95);opacity:.8}
+  50%{transform:translate(12px,45vh) rotate(200deg) scale(.85);opacity:.7}
+  75%{transform:translate(-8px,20vh) rotate(290deg) scale(.6);opacity:.5}
+  100%{transform:translate(5px,-10vh) rotate(380deg) scale(.3);opacity:0}
+}
+@keyframes twinkle{
+  0%,100%{opacity:.1;transform:scale(.6) rotate(0deg)}
+  25%{opacity:.5;transform:scale(.9) rotate(10deg)}
+  50%{opacity:1;transform:scale(1.3) rotate(0deg)}
+  75%{opacity:.4;transform:scale(.8) rotate(-10deg)}
+}
+@keyframes dotPulse{
+  0%,100%{opacity:0;transform:scale(.3)}
+  50%{opacity:.7;transform:scale(1.2)}
+}
+@keyframes sparkle{
+  0%,88%,100%{opacity:0;transform:scale(0) rotate(0deg)}
+  94%{opacity:1;transform:scale(2) rotate(45deg)}
+  96%{opacity:.3;transform:scale(1) rotate(60deg)}
+}
+</style>
+</head>
+<body>
+<div class="widget">
+  <div class="aurora"></div>
+  <div class="particles" id="particles"></div>
+
+  <!-- Logo -->
+  <div class="logo">
+    <svg class="logo-icon" viewBox="0 0 44 44" fill="none">
+      <!-- Main star with glow halo -->
+      <defs>
+        <filter id="glow1"><feGaussianBlur stdDeviation="1.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="glow2"><feGaussianBlur stdDeviation="1" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <!-- Main 4-pointed star -->
+      <path d="M22 2 L26 15 L40 20 L26 25 L22 38 L18 25 L4 20 L18 15Z"
+            fill="#B861FF" filter="url(#glow1)">
+        <animate attributeName="opacity" values=".75;1;.75" dur="3s" repeatCount="indefinite"/>
+      </path>
+      <!-- Small upper-left star -->
+      <path d="M10 3 L12.2 9.5 L18.5 11.8 L12.2 14 L10 20.5 L7.8 14 L1.5 11.8 L7.8 9.5Z"
+            fill="#EDD5FF" filter="url(#glow2)">
+        <animate attributeName="opacity" values=".3;.9;.3" dur="2.5s" repeatCount="indefinite"/>
+        <animateTransform attributeName="transform" type="rotate" values="0 10 11.8;8 10 11.8;0 10 11.8" dur="6s" repeatCount="indefinite"/>
+      </path>
+      <!-- Small lower-right star -->
+      <path d="M34 26 L35.5 31 L40 32.5 L35.5 34 L34 39 L32.5 34 L28 32.5 L32.5 31Z"
+            fill="#6B20FF" filter="url(#glow2)">
+        <animate attributeName="opacity" values=".4;1;.4" dur="3.5s" repeatCount="indefinite"/>
+        <animateTransform attributeName="transform" type="rotate" values="0 34 32.5;-8 34 32.5;0 34 32.5" dur="7s" repeatCount="indefinite"/>
+      </path>
+      <!-- Tiny sparkle accent -->
+      <circle cx="30" cy="8" r="1.2" fill="#fff" opacity="0">
+        <animate attributeName="opacity" values="0;.9;0" dur="4s" begin="1.5s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="0.8;1.8;0.8" dur="4s" begin="1.5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="6" cy="28" r="1" fill="#D4A0FF" opacity="0">
+        <animate attributeName="opacity" values="0;.7;0" dur="5s" begin="3s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+    <div class="logo-right">
+      <span class="logo-text">INFOHUNTER</span>
+      <span class="logo-sub">信 息 捕 手</span>
+    </div>
+  </div>
+
+  <div class="shimmer shimmer-top"></div>
+
+  <!-- Time -->
+  <div class="time-section">
+    <span class="time-hm" id="hm">--:--</span><span class="time-sec" id="sec">--</span>
+  </div>
+
+  <!-- Date -->
+  <div class="date-section">
+    <span class="date-val" id="date">----年--月--日</span>
+    <span class="date-week" id="week">------</span>
+  </div>
+
+  <div class="shimmer shimmer-bottom"></div>
+
+  <!-- Daily Quote -->
+  <div class="quote-section">
+    <div class="quote-text" id="quote"></div>
+    <div class="quote-author" id="author"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var DAYS = ['日','一','二','三','四','五','六'];
+  var PALETTE = ['#B861FF','#D4A0FF','#EDD5FF','#FF8ED4','#9B59FF','#6B20FF'];
+  var STAR_PATH = 'M10 0 L12.5 7 L20 10 L12.5 13 L10 20 L7.5 13 L0 10 L7.5 7Z';
+  var DIAMOND_PATH = 'M10 0 L14 10 L10 20 L6 10Z';
+
+  /* ======== 365 Daily Quotes ======== */
+  /* Format: "quote|author" — one for each day of the year */
+  /* Selection: dayOfYear × 167 mod 365 (167 is prime, gcd(167,365)=1, full cycle guaranteed) */
+  var Q = [
+    // ---- Chinese Classical (1-50) ----
+    "博学之，审问之，慎思之，明辨之，笃行之。|《中庸》",
+    "天行健，君子以自强不息。|《周易》",
+    "知者不惑，仁者不忧，勇者不惧。|孔子",
+    "千里之行，始于足下。|老子",
+    "学而不思则罔，思而不学则殆。|孔子",
+    "知人者智，自知者明。|老子",
+    "工欲善其事，必先利其器。|孔子",
+    "路漫漫其修远兮，吾将上下而求索。|屈原",
+    "不积跬步，无以至千里。|荀子",
+    "合抱之木，生于毫末。九层之台，起于累土。|老子",
+    "吾日三省吾身。|曾子",
+    "君子坦荡荡，小人长戚戚。|孔子",
+    "知之者不如好之者，好之者不如乐之者。|孔子",
+    "己所不欲，勿施于人。|孔子",
+    "三人行，必有我师焉。|孔子",
+    "大道至简。|老子",
+    "上善若水，水善利万物而不争。|老子",
+    "天下难事，必作于易；天下大事，必作于细。|老子",
+    "欲穷千里目，更上一层楼。|王之涣",
+    "纸上得来终觉浅，绝知此事要躬行。|陆游",
+    "不畏浮云遮望眼，自缘身在最高层。|王安石",
+    "苟日新，日日新，又日新。|《大学》",
+    "知止而后有定，定而后能静。|《大学》",
+    "莫听穿林打叶声，何妨吟啸且徐行。|苏轼",
+    "人生到处知何似，应似飞鸿踏雪泥。|苏轼",
+    "沉舟侧畔千帆过，病树前头万木春。|刘禹锡",
+    "山重水复疑无路，柳暗花明又一村。|陆游",
+    "业精于勤，荒于嬉；行成于思，毁于随。|韩愈",
+    "人心惟危，道心惟微，惟精惟一，允执厥中。|《尚书》",
+    "破山中贼易，破心中贼难。|王阳明",
+    "知行合一。|王阳明",
+    "此心光明，亦复何言。|王阳明",
+    "志不立，天下无可成之事。|王阳明",
+    "事上磨练。|王阳明",
+    "天将降大任于斯人也，必先苦其心志。|孟子",
+    "穷则独善其身，达则兼济天下。|孟子",
+    "虽千万人，吾往矣。|孟子",
+    "生于忧患，死于安乐。|孟子",
+    "尽信书，则不如无书。|孟子",
+    "古之立大事者，不惟有超世之才，亦必有坚忍不拔之志。|苏轼",
+    "胜人者有力，自胜者强。|老子",
+    "居安思危，思则有备，有备无患。|《左传》",
+    "凡事预则立，不预则废。|《礼记》",
+    "有志者事竟成。|《后汉书》",
+    "士不可以不弘毅，任重而道远。|曾子",
+    "吾生也有涯，而知也无涯。|庄子",
+    "人无远虑，必有近忧。|孔子",
+    "日知其所亡，月无忘其所能。|子夏",
+    "见贤思齐焉，见不贤而内自省也。|孔子",
+    "功崇惟志，业广惟勤。|《尚书》",
+    // ---- Modern Chinese (51-90) ----
+    "世上本没有路，走的人多了，便成了路。|鲁迅",
+    "真的猛士，敢于直面惨淡的人生。|鲁迅",
+    "不满是向上的车轮。|鲁迅",
+    "怀疑并不是缺点，总是疑而不决才是缺点。|鲁迅",
+    "大胆地假设，小心地求证。|胡适",
+    "做学问要在不疑处有疑，待人要在有疑处不疑。|胡适",
+    "人生的意义不在于何以有生，而在自己怎样生活。|胡适",
+    "两脚踏东西文化，一心评宇宙文章。|林语堂",
+    "人生不过如此，且行且珍惜。|林语堂",
+    "理想的人物不仅要满足物质需要，还要有精神世界的充实。|黑格尔",
+    "你若是狮子，何须炫耀？|仓央嘉措",
+    "慢慢来，比较快。|段永平",
+    "做对的事情，把事情做对。|段永平",
+    "敢为天下后，后中争先。|段永平",
+    "本分。|段永平",
+    "停止做不对的事情。|段永平",
+    "平常心。不要因为结果好就做过头，不要因为结果不好就忘了初心。|段永平",
+    "快就是慢，慢就是快。|段永平",
+    "消费者才是老板。|段永平",
+    "不要用战术的勤奋掩盖战略的懒惰。|雷军",
+    "站在风口上，猪也能飞。但风停了呢？|雷军",
+    "把朋友弄得多多的，把敌人弄得少少的。|任正非",
+    "让听得见炮声的人来决策。|任正非",
+    "烧不死的鸟就是凤凰。|任正非",
+    "以客户为中心，以奋斗者为本。|任正非",
+    "自古不谋万世者，不足谋一时；不谋全局者，不足谋一域。|陈澹然",
+    "认知决定命运。|查理·芒格",
+    "反过来想，总是反过来想。|查理·芒格",
+    "长期主义者笑到最后。|张磊",
+    "在你的能力圈内投资。|沃伦·巴菲特",
+    "别人贪婪时我恐惧，别人恐惧时我贪婪。|沃伦·巴菲特",
+    "时间是好生意的朋友，是坏生意的敌人。|沃伦·巴菲特",
+    "价格是你付出的，价值是你得到的。|沃伦·巴菲特",
+    "只有退潮时才知道谁在裸泳。|沃伦·巴菲特",
+    "我们不必比别人更聪明，但必须比别人更有纪律。|沃伦·巴菲特",
+    "如果你不愿意拥有一只股票十年，就不要考虑拥有它十分钟。|沃伦·巴菲特",
+    "复利是世界第八大奇迹。|爱因斯坦",
+    "你永远赚不到你认知以外的钱。|佚名",
+    "所有伟大的事业都始于一个不被理解的少数派。|纳瓦尔",
+    "杠杆是你睡觉时也能赚钱的能力。|纳瓦尔",
+    // ---- Western Philosophy & Stoicism (91-145) ----
+    "未经审视的人生不值得过。|苏格拉底",
+    "我知道我一无所知。|苏格拉底",
+    "我们不能两次踏入同一条河流。|赫拉克利特",
+    "万物流转。|赫拉克利特",
+    "给我一个支点，我可以撬动整个地球。|阿基米德",
+    "吾爱吾师，吾更爱真理。|亚里士多德",
+    "人是天生的政治动物。|亚里士多德",
+    "不要为你无法控制的事情烦恼。|爱比克泰德",
+    "困扰我们的不是事物本身，而是我们对事物的看法。|爱比克泰德",
+    "在你能控制的事上做到最好，对其余的泰然处之。|爱比克泰德",
+    "你有权力控制自己的思想——而非外部事件。认识到这一点，你将找到力量。|马可·奥勒留",
+    "不要浪费剩余的时间去想别人在干什么。|马可·奥勒留",
+    "对发生的事情最好的报复就是不要变成那样的人。|马可·奥勒留",
+    "当你在早上不想起床时，告诉自己：我要去做一个人的工作。|马可·奥勒留",
+    "我们的生命是由思想塑造的。|马可·奥勒留",
+    "真正的财富不是拥有更多，而是欲求更少。|塞涅卡",
+    "并不是我们没有足够的时间，而是我们浪费了太多时间。|塞涅卡",
+    "运气是当准备遇上机会的时候。|塞涅卡",
+    "困难使心灵更加坚强，正如劳动使身体更加强壮。|塞涅卡",
+    "每天晚上睡前问自己：今天我治愈了自己的什么缺陷？|塞涅卡",
+    "我思故我在。|笛卡尔",
+    "人是一根会思想的芦苇。|帕斯卡尔",
+    "知识就是力量。|弗朗西斯·培根",
+    "存在先于本质。|萨特",
+    "他人即地狱。|萨特",
+    "人是被判定为自由的。|萨特",
+    "凡不能毁灭我的，必使我更强大。|尼采",
+    "当你凝视深渊时，深渊也在凝视你。|尼采",
+    "每一个不曾起舞的日子，都是对生命的辜负。|尼采",
+    "你必须准备好沐浴在你自身的烈焰之中。|尼采",
+    "成为你自己。|尼采",
+    "人生没有意义，但你可以赋予它意义。|维克多·弗兰克尔",
+    "在刺激与回应之间，有一个空间。在那个空间里有我们选择回应的自由与力量。|维克多·弗兰克尔",
+    "幸福不可追求，它是一种附带结果。|维克多·弗兰克尔",
+    "勇气不是没有恐惧，而是判断有比恐惧更重要的事。|安布罗斯·雷德穆恩",
+    "唯一真正的智慧是知道自己一无所知。|苏格拉底",
+    "幸运之神只眷顾有准备的人。|路易·巴斯德",
+    "简单是最终的复杂。|达·芬奇",
+    "学而不用，等于不学。|富兰克林",
+    "时间就是金钱。|富兰克林",
+    "诚实是最好的策略。|富兰克林",
+    "投资于知识总能获得最好的回报。|富兰克林",
+    "自由意味着责任，这就是为什么大多数人害怕它。|萧伯纳",
+    "理性的人适应世界，不理性的人坚持让世界适应自己。因此，所有进步都依赖于不理性的人。|萧伯纳",
+    "习惯的锁链轻到感觉不到，直到重到无法挣脱。|沃伦·巴菲特",
+    // ---- Entrepreneurship & Business (146-225) ----
+    "Stay hungry, stay foolish.|Steve Jobs",
+    "The only way to do great work is to love what you do.|Steve Jobs",
+    "Innovation distinguishes between a leader and a follower.|Steve Jobs",
+    "Your time is limited, don't waste it living someone else's life.|Steve Jobs",
+    "简洁是终极的精致。|Steve Jobs",
+    "People don't know what they want until you show it to them.|Steve Jobs",
+    "The people who are crazy enough to think they can change the world are the ones who do.|Apple",
+    "Move fast and break things.|Mark Zuckerberg",
+    "Done is better than perfect.|Sheryl Sandberg",
+    "If you're offered a seat on a rocket ship, don't ask what seat.|Sheryl Sandberg",
+    "The best time to plant a tree was 20 years ago. The second best time is now.|谚语",
+    "Your most unhappy customers are your greatest source of learning.|Bill Gates",
+    "We always overestimate the change in two years and underestimate the change in ten.|Bill Gates",
+    "I'm not afraid of the person who has practiced 10,000 kicks once. I'm afraid of the person who has practiced one kick 10,000 times.|Bruce Lee",
+    "Be water, my friend.|Bruce Lee",
+    "Knowing is not enough, we must apply. Willing is not enough, we must do.|Bruce Lee",
+    "It's not about ideas. It's about making ideas happen.|Scott Belsky",
+    "The best way to predict the future is to create it.|Peter Drucker",
+    "What gets measured gets managed.|Peter Drucker",
+    "Culture eats strategy for breakfast.|Peter Drucker",
+    "Make something people want.|Y Combinator",
+    "Do things that don't scale.|Paul Graham",
+    "Live in the future, then build what's missing.|Paul Graham",
+    "A startup is a company designed to grow fast.|Paul Graham",
+    "The most dangerous thing is to not take any risk.|Mark Zuckerberg",
+    "Being non-consensus and right is the path with the highest odds of a breakthrough.|Jeff Bezos",
+    "Focus on the things that won't change.|Jeff Bezos",
+    "Your margin is my opportunity.|Jeff Bezos",
+    "It's always Day 1.|Jeff Bezos",
+    "I knew that if I failed I wouldn't regret that, but I knew the one thing I might regret is not trying.|Jeff Bezos",
+    "Work hard, have fun, make history.|Jeff Bezos",
+    "If you can't feed a team with two pizzas, it's too large.|Jeff Bezos",
+    "The most important thing is to keep the most important thing the most important thing.|Stephen Covey",
+    "Begin with the end in mind.|Stephen Covey",
+    "Seek first to understand, then to be understood.|Stephen Covey",
+    "The enemy of the best is the good.|Voltaire",
+    "速度不是最重要的，方向才是。|佚名",
+    "Think big, start small, move fast.|佚名",
+    "Every expert was once a beginner.|佚名",
+    "Build something 100 people love, not something 1 million people kind of like.|Paul Graham",
+    "The best founders are the ones who are least afraid of being wrong.|佚名",
+    "Default alive or default dead? That's the question every startup should ask.|Paul Graham",
+    "你的产品应该好到用户会推荐给朋友。|佚名",
+    "Compounding is the eighth wonder of the world.|Albert Einstein",
+    "If you want to go fast, go alone. If you want to go far, go together.|非洲谚语",
+    "Play long-term games with long-term people.|Naval Ravikant",
+    "Specific knowledge is found by pursuing your genuine curiosity.|Naval Ravikant",
+    "Earn with your mind, not your time.|Naval Ravikant",
+    "Code and media are permissionless leverage.|Naval Ravikant",
+    "Read what you love until you love to read.|Naval Ravikant",
+    "A calm mind, a fit body, a house full of love. These things cannot be bought.|Naval Ravikant",
+    "Escape competition through authenticity.|Naval Ravikant",
+    "The secret to doing good research is always to be a little underemployed.|Amos Tversky",
+    "Competition is for losers.|Peter Thiel",
+    "What important truth do very few people agree with you on?|Peter Thiel",
+    "创业的本质是创造价值，而不是分配价值。|Peter Thiel",
+    "从0到1比从1到100更重要。|Peter Thiel",
+    "最好的公司都像邪教，最差的则像军队。|Peter Thiel",
+    "The best minds of my generation are thinking about how to make people click ads.|Jeff Hammerbacher",
+    "Decide what you want, decide what you're willing to exchange for it, establish your priorities, and go to work.|H.L. Hunt",
+    "If you don't build your dream, someone else will hire you to build theirs.|Farrah Gray",
+    "It's hard to beat a person who never gives up.|Babe Ruth",
+    "Revenue solves all known problems.|Eric Schmidt",
+    "Great companies are built on great products.|Elon Musk",
+    "When something is important enough, you do it even if the odds are not in your favor.|Elon Musk",
+    "I think it's possible for ordinary people to choose to be extraordinary.|Elon Musk",
+    "Persistence is very important. Don't give up unless you're forced to.|Elon Musk",
+    "品牌是一种承诺。|Seth Godin",
+    "Ship often. Ship lousy stuff, but ship. Ship constantly.|Seth Godin",
+    "Art is the generous act of making things better by doing something that might not work.|Seth Godin",
+    "In a world of change, the learners shall inherit the earth.|Eric Hoffer",
+    "Don't find customers for your products, find products for your customers.|Seth Godin",
+    "最大的风险是不冒任何风险。|佚名",
+    "Entrepreneurship is living a few years of your life like most people won't, so you can live the rest of your life like most people can't.|佚名",
+    "Clarity about what matters provides clarity about what does not.|Cal Newport",
+    "Deep work is the ability to focus without distraction on a cognitively demanding task.|Cal Newport",
+    "A wealth of information creates a poverty of attention.|Herbert Simon",
+    "Simplicity is about subtracting the obvious and adding the meaningful.|John Maeda",
+    // ---- Growth & Learning (226-275) ----
+    "Growth is painful. Change is painful. But nothing is as painful as staying stuck.|Mandy Hale",
+    "The more I read, the more I acquire, the more certain I am that I know nothing.|Voltaire",
+    "Education is not the filling of a pail, but the lighting of a fire.|W.B. Yeats",
+    "The mind is not a vessel to be filled, but a fire to be kindled.|Plutarch",
+    "In the middle of difficulty lies opportunity.|Albert Einstein",
+    "Imagination is more important than knowledge.|Albert Einstein",
+    "Try not to become a man of success, but rather a man of value.|Albert Einstein",
+    "Life is like riding a bicycle. To keep your balance, you must keep moving.|Albert Einstein",
+    "The important thing is not to stop questioning.|Albert Einstein",
+    "Anyone who has never made a mistake has never tried anything new.|Albert Einstein",
+    "If you can't explain it simply, you don't understand it well enough.|Albert Einstein",
+    "The only source of knowledge is experience.|Albert Einstein",
+    "I have no special talent. I am only passionately curious.|Albert Einstein",
+    "The measure of intelligence is the ability to change.|Albert Einstein",
+    "It is not that I'm so smart. But I stay with the questions much longer.|Albert Einstein",
+    "What we know is a drop, what we don't know is an ocean.|Isaac Newton",
+    "If I have seen further, it is by standing on the shoulders of giants.|Isaac Newton",
+    "The only true wisdom is in knowing you know nothing.|苏格拉底",
+    "Wonder is the beginning of wisdom.|苏格拉底",
+    "An investment in knowledge pays the best interest.|Benjamin Franklin",
+    "Tell me and I forget, teach me and I may remember, involve me and I learn.|Benjamin Franklin",
+    "读书破万卷，下笔如有神。|杜甫",
+    "腹有诗书气自华。|苏轼",
+    "书山有路勤为径，学海无涯苦作舟。|韩愈",
+    "少壮不努力，老大徒伤悲。|《长歌行》",
+    "学如逆水行舟，不进则退。|佚名",
+    "他山之石，可以攻玉。|《诗经》",
+    "读万卷书，行万里路。|刘彝",
+    "温故而知新，可以为师矣。|孔子",
+    "玉不琢，不成器；人不学，不知道。|《礼记》",
+    "黑发不知勤学早，白首方悔读书迟。|颜真卿",
+    "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice.|Brian Herbert",
+    "Develop a passion for learning. If you do, you will never cease to grow.|Anthony D'Angelo",
+    "The beautiful thing about learning is that nobody can take it away from you.|B.B. King",
+    "You don't have to be great to start, but you have to start to be great.|Zig Ziglar",
+    "The expert in anything was once a beginner.|Helen Hayes",
+    "Self-education is, I firmly believe, the only kind of education there is.|Isaac Asimov",
+    "Intellectual curiosity drives out fear.|Charlie Munger",
+    "Spend each day trying to be a little wiser than you were when you woke up.|Charlie Munger",
+    "Go to bed smarter than when you woke up.|Charlie Munger",
+    "In my whole life, I have known no wise people who didn't read all the time.|Charlie Munger",
+    "Knowing what you don't know is more useful than being brilliant.|Charlie Munger",
+    "The world belongs to the curious.|佚名",
+    "A reader lives a thousand lives before he dies. The man who never reads lives only one.|George R.R. Martin",
+    "The man who does not read has no advantage over the man who cannot read.|Mark Twain",
+    "二十年后，你会为你没做的事后悔，远胜于你做过的事。|Mark Twain",
+    "The secret of getting ahead is getting started.|Mark Twain",
+    "Whenever you find yourself on the side of the majority, it is time to pause and reflect.|Mark Twain",
+    "Travel is fatal to prejudice, bigotry, and narrow-mindedness.|Mark Twain",
+    "Continuous improvement is better than delayed perfection.|Mark Twain",
+    // ---- Perseverance & Resilience (276-320) ----
+    "Fall seven times, stand up eight.|日本谚语",
+    "Success is not final, failure is not fatal: it is the courage to continue that counts.|Winston Churchill",
+    "If you're going through hell, keep going.|Winston Churchill",
+    "We make a living by what we get, but we make a life by what we give.|Winston Churchill",
+    "The pessimist sees difficulty in every opportunity. The optimist sees opportunity in every difficulty.|Winston Churchill",
+    "Success usually comes to those who are too busy to be looking for it.|Henry David Thoreau",
+    "Go confidently in the direction of your dreams.|Henry David Thoreau",
+    "It does not matter how slowly you go as long as you do not stop.|孔子",
+    "Our greatest glory is not in never falling, but in rising every time we fall.|孔子",
+    "The man who moves a mountain begins by carrying away small stones.|孔子",
+    "I failed my way to success.|Thomas Edison",
+    "I have not failed. I've just found 10,000 ways that won't work.|Thomas Edison",
+    "Genius is one percent inspiration and ninety-nine percent perspiration.|Thomas Edison",
+    "Many of life's failures are people who did not realize how close they were to success when they gave up.|Thomas Edison",
+    "Opportunity is missed by most people because it is dressed in overalls and looks like work.|Thomas Edison",
+    "Everything you've ever wanted is on the other side of fear.|George Addair",
+    "Hardships often prepare ordinary people for an extraordinary destiny.|C.S. Lewis",
+    "You can't go back and change the beginning, but you can start where you are and change the ending.|C.S. Lewis",
+    "Courage is not the absence of fear, but the triumph over it.|Nelson Mandela",
+    "It always seems impossible until it's done.|Nelson Mandela",
+    "Do not judge me by my successes, judge me by how many times I fell down and got back up again.|Nelson Mandela",
+    "The greatest glory in living lies not in never falling, but in rising every time we fall.|Nelson Mandela",
+    "In the end, it's not the years in your life that count, it's the life in your years.|Abraham Lincoln",
+    "The best way to predict your future is to create it.|Abraham Lincoln",
+    "I will prepare and some day my chance will come.|Abraham Lincoln",
+    "Smooth seas do not make skillful sailors.|非洲谚语",
+    "What doesn't kill you makes you stronger.|尼采",
+    "The impediment to action advances action. What stands in the way becomes the way.|马可·奥勒留",
+    "You must be the change you wish to see in the world.|甘地",
+    "First they ignore you, then they laugh at you, then they fight you, then you win.|甘地",
+    "Strength does not come from winning. Your struggles develop your strengths.|Arnold Schwarzenegger",
+    "The harder the conflict, the more glorious the triumph.|Thomas Paine",
+    "Rock bottom became the solid foundation on which I rebuilt my life.|J.K. Rowling",
+    "It is impossible to live without failing at something.|J.K. Rowling",
+    "困难和挫折是生活给你的礼物，只是包装比较丑。|佚名",
+    "行百里者半九十。|《战国策》",
+    "锲而不舍，金石可镂。|荀子",
+    "宝剑锋从磨砺出，梅花香自苦寒来。|佚名",
+    "精诚所至，金石为开。|《后汉书》",
+    "天生我材必有用，千金散尽还复来。|李白",
+    "长风破浪会有时，直挂云帆济沧海。|李白",
+    "大鹏一日同风起，扶摇直上九万里。|李白",
+    "千磨万击还坚劲，任尔东西南北风。|郑燮",
+    "世上无难事，只怕有心人。|毛泽东",
+    "星星之火，可以燎原。|毛泽东",
+    // ---- Creativity & Innovation (321-355) ----
+    "Creativity is intelligence having fun.|Albert Einstein",
+    "Logic will get you from A to B. Imagination will take you everywhere.|Albert Einstein",
+    "The chief enemy of creativity is good sense.|Pablo Picasso",
+    "Every child is an artist. The problem is how to remain an artist once we grow up.|Pablo Picasso",
+    "Good artists copy, great artists steal.|Pablo Picasso",
+    "Creativity takes courage.|Henri Matisse",
+    "Art is not what you see, but what you make others see.|Edgar Degas",
+    "The desire to create is one of the deepest yearnings of the human soul.|Dieter F. Uchtdorf",
+    "You can't use up creativity. The more you use, the more you have.|Maya Angelou",
+    "There is no greater agony than bearing an untold story inside you.|Maya Angelou",
+    "We delight in the beauty of the butterfly, but rarely admit the changes it has gone through.|Maya Angelou",
+    "If you hear a voice within you say 'you cannot paint,' then by all means paint, and that voice will be silenced.|Van Gogh",
+    "Have no fear of perfection — you'll never reach it.|Salvador Dali",
+    "The only way to discover the limits of the possible is to go beyond them into the impossible.|Arthur C. Clarke",
+    "Any sufficiently advanced technology is indistinguishable from magic.|Arthur C. Clarke",
+    "Make it work, make it right, make it fast.|Kent Beck",
+    "Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away.|Saint-Exupery",
+    "Less is more.|Mies van der Rohe",
+    "Design is not just what it looks like. Design is how it works.|Steve Jobs",
+    "Details matter, it's worth waiting to get it right.|Steve Jobs",
+    "Constraints breed creativity.|佚名",
+    "The best way to have a good idea is to have a lot of ideas.|Linus Pauling",
+    "To invent, you need a good imagination and a pile of junk.|Thomas Edison",
+    "The true sign of intelligence is not knowledge but imagination.|Albert Einstein",
+    "Everything is designed. Few things are designed well.|Brian Reed",
+    "创新是对1000件事说不。|Steve Jobs",
+    "Think different.|Apple",
+    "问题本身往往包含着答案的线索。|佚名",
+    "The people who are crazy enough to think they can change the world are the ones who do.|Steve Jobs",
+    "All great deeds and all great thoughts have a ridiculous beginning.|Albert Camus",
+    "One must imagine Sisyphus happy.|Albert Camus",
+    "In the depth of winter, I finally learned that within me there lay an invincible summer.|Albert Camus",
+    "创作是最孤独的事，也是最自由的事。|佚名",
+    "Write what should not be forgotten.|Isabel Allende",
+    "The future belongs to those who believe in the beauty of their dreams.|Eleanor Roosevelt",
+    // ---- Life Wisdom (356-365) ----
+    "Be yourself; everyone else is already taken.|Oscar Wilde",
+    "The only thing we have to fear is fear itself.|Franklin Roosevelt",
+    "To be or not to be, that is the question.|Shakespeare",
+    "人生如逆旅，我亦是行人。|苏轼",
+    "一万年太久，只争朝夕。|毛泽东",
+    "Happiness is not something readymade. It comes from your own actions.|Dalai Lama",
+    "Yesterday is history, tomorrow is a mystery, today is a gift.|Eleanor Roosevelt",
+    "The purpose of our lives is to be happy.|Dalai Lama",
+    "Life is what happens when you're busy making other plans.|John Lennon",
+    "In three words I can sum up everything I've learned about life: it goes on.|Robert Frost",
+    "不要等待完美时刻，抓住此刻让它完美。|佚名",
+    "The world is a book and those who do not travel read only one page.|Saint Augustine",
+    "Knowing yourself is the beginning of all wisdom.|亚里士多德",
+    "We are what we repeatedly do. Excellence is not an act, but a habit.|亚里士多德",
+    "The unexamined life is not worth living.|苏格拉底",
+    "Do what you can, with what you have, where you are.|Theodore Roosevelt",
+    "Believe you can and you're halfway there.|Theodore Roosevelt",
+    "It is not the strongest of the species that survives, nor the most intelligent, but the one most responsive to change.|Charles Darwin",
+    "真正的自由，是内心不受束缚。|佚名",
+    "The best revenge is massive success.|Frank Sinatra",
+    "Dream big. Start small. Act now.|Robin Sharma"
+  ];
+
+  /* ---- Clock ---- */
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+  function updateClock(){
+    var now = new Date();
+    $('hm').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    $('sec').textContent = pad(now.getSeconds());
+    $('date').textContent = now.getFullYear() + '\u5E74' + (now.getMonth()+1) + '\u6708' + now.getDate() + '\u65E5';
+    $('week').textContent = '\u661F\u671F' + DAYS[now.getDay()];
+
+  }
+
+  /* ---- Daily Quote (pseudo-random, deterministic per day) ---- */
+  function showDailyQuote(){
+    var now = new Date();
+    var start = new Date(now.getFullYear(), 0, 0);
+    var dayOfYear = Math.floor((now - start) / 86400000);
+    // 167 is prime, gcd(167,365)=1 → cycles through all 365 indices in a year
+    var index = (dayOfYear * 167 + 13) % Q.length;
+    var parts = Q[index].split('|');
+    $('quote').textContent = '\u201C' + parts[0] + '\u201D';
+    $('author').textContent = '\u2014 ' + parts[1];
+  }
+
+  /* ---- Particles ---- */
+  function createParticles(){
+    var container = $('particles');
+
+    // Helper: center-biased random (gaussian-ish, 15%-85% range)
+    function cRand(){ return 15 + (Math.random()+Math.random()+Math.random())/3 * 70; }
+
+    // Floating stars — concentrated in center
+    for(var i = 0; i < 38; i++){
+      var el = document.createElement('div');
+      el.className = 'particle';
+      var sz = 4 + Math.random() * 10;
+      var col = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+      var x = cRand();
+      var dur = 10 + Math.random() * 14;
+      var delay = -(Math.random() * 24);
+      var path = Math.random() > 0.25 ? STAR_PATH : DIAMOND_PATH;
+      el.style.cssText = 'left:'+x+'%;width:'+sz+'px;height:'+sz+'px;animation:starFloat '+dur+'s linear '+delay+'s infinite';
+      el.innerHTML = '<svg viewBox="0 0 20 20"><path d="'+path+'" fill="'+col+'"/></svg>';
+      container.appendChild(el);
+    }
+
+    // Twinkling stars — concentrated in center
+    for(var j = 0; j < 25; j++){
+      var el2 = document.createElement('div');
+      el2.className = 'particle';
+      var sz2 = 2 + Math.random() * 5;
+      var col2 = PALETTE[Math.floor(Math.random() * 3)];
+      var x2 = cRand();
+      var y2 = 10 + Math.random() * 80;
+      var dur2 = 2 + Math.random() * 4;
+      var delay2 = -(Math.random() * 6);
+      el2.style.cssText = 'left:'+x2+'%;top:'+y2+'%;width:'+sz2+'px;height:'+sz2+'px;animation:twinkle '+dur2+'s ease-in-out '+delay2+'s infinite';
+      el2.innerHTML = '<svg viewBox="0 0 20 20"><path d="'+STAR_PATH+'" fill="'+col2+'"/></svg>';
+      container.appendChild(el2);
+    }
+
+    // Glow dots
+    for(var k = 0; k < 12; k++){
+      var el3 = document.createElement('div');
+      var sz3 = 3 + Math.random() * 4;
+      var x3 = cRand();
+      var y3 = 10 + Math.random() * 80;
+      var dur3 = 3 + Math.random() * 5;
+      var delay3 = -(Math.random() * 6);
+      el3.style.cssText = 'position:absolute;left:'+x3+'%;top:'+y3+'%;width:'+sz3+'px;height:'+sz3+'px;border-radius:50%;background:rgba(184,97,255,0.5);box-shadow:0 0 '+Math.round(sz3*3)+'px rgba(184,97,255,0.3);animation:dotPulse '+dur3+'s ease-in-out '+delay3+'s infinite;will-change:transform,opacity';
+      container.appendChild(el3);
+    }
+
+    // Sparkle flashes
+    for(var m = 0; m < 7; m++){
+      var el4 = document.createElement('div');
+      el4.className = 'particle';
+      var sz4 = 6 + Math.random() * 6;
+      var x4 = 15 + Math.random() * 70;
+      var y4 = 10 + Math.random() * 80;
+      var dur4 = 8 + Math.random() * 15;
+      var delay4 = -(Math.random() * 20);
+      el4.style.cssText = 'left:'+x4+'%;top:'+y4+'%;width:'+sz4+'px;height:'+sz4+'px;animation:sparkle '+dur4+'s ease-in-out '+delay4+'s infinite';
+      el4.innerHTML = '<svg viewBox="0 0 20 20"><path d="'+STAR_PATH+'" fill="#fff"/></svg>';
+      container.appendChild(el4);
+    }
+  }
+
+  /* ---- Init ---- */
+  updateClock();
+  showDailyQuote();
+  createParticles();
+  setInterval(updateClock, 1000);
+})();
+</script>
+</body>
+</html>
