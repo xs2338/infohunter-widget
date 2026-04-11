@@ -13,7 +13,7 @@ html,body{
 }
 
 body{
-  background:linear-gradient(160deg,#0d0015 0%,#1a0a2e 40%,#100520 100%);
+  background:linear-gradient(160deg,#1e1035 0%,#2a1548 40%,#1c0f38 100%);
   border-radius:12px;
   overflow:hidden;
 }
@@ -668,8 +668,8 @@ body{
   function createParticles(){
     var container = $('particles');
 
-    // Helper: center-biased random (gaussian-ish, 15%-85% range)
-    function cRand(){ return 15 + (Math.random()+Math.random()+Math.random())/3 * 70; }
+    // Spread across full width with mild center bias
+    function cRand(){ return 5 + (Math.random()+Math.random())/2 * 90; }
 
     // Floating stars — concentrated in center
     for(var i = 0; i < 38; i++){
